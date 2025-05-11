@@ -12,6 +12,46 @@ token = os.getenv("HF_TOKEN")
 
 assert torch.cuda.is_available(), "GPU not available!"
 
+
+
+def evaluate_(model, data_loader,  yes_token_id, no_token_id, device='cuda'):
+    """
+    Function to implement zero-shot distilGPT2 inference
+    Args:
+    model: GPT2 model
+    data_loader: Dataloader for the dataset
+    ...: Any other arguments you may need
+
+    Returns:
+    preds
+    """
+    model.eval()
+    preds = []
+    y_true = []
+    model.to(device)
+    for batch in tqdm(data_loader):
+        input_ids = batch['input_ids'].to(device)
+        attention_mask = batch['attention_mask'].to(device)
+
+        with torch.no_grad():
+            with torch.amp.autocast(device_type=device, dtype=torch.float16):
+                output = model(input_ids=input_ids, attention_mask=attention_mask)
+                logits = output.logits # (batchsize, chunklen, vocab_size)
+
+                last_indices = attention_mask.sum(-1)-1
+                final_logits = logits[torch.arange(len(input_ids)), last_indices] # (batchsize,vocab_size)
+                probs = F.softmax(final_logits, dim=-1) # (batchsize,vocab_size)
+
+                yes_probs = probs[:, yes_token_id]
+                no_probs = probs[:, no_token_id]
+
+                preds.extend((yes_probs > no_probs).int().tolist())
+                y_true.extend(batch['answer'].int().tolist())
+
+    return preds, y_true
+
+
+
 login(token=token)
 # Load model/tokenizer
 model_id = 'meta-llama/Llama-3.2-1B'
@@ -26,7 +66,7 @@ tokenizer.pad_token = tokenizer.eos_token  # Required
 print("Tokenizer and model loaded successfully.")
 
 # Load PubMedQA example
-dataset = load_dataset("qiaojin/PubMedQA", "pqa_labeled")["train"]
+dataset = load_dataset("qiaojin/PubMedQA", "pqa_artificaial")["train"]
 # example = dataset['train'][0]
 
 # Prompt with instruction tuning style
@@ -41,61 +81,6 @@ def build_prompt(question, context):
     
     return prompt
 
-# prompt = build_prompt(example['question'], example['context'])
+# build a tokenizer
 
-# # Generate
-qa_pipeline = pipeline("text-generation", model=model, tokenizer=tokenizer)
-# response = qa_pipeline(prompt, max_new_tokens=15, do_sample=False, return_full_text=False)[0]['generated_text']
-
-# get device of qa_pipeline
-device = qa_pipeline.device
-print(f"Pipeline device: {device}")
-
-
-# # Debug raw output
-# print("Raw Generated Text:", repr(response))
-
-# # Postprocess: get Yes/No safely
-# tokens = response.strip().split()
-# answer = tokens[0] if tokens else "[EMPTY]"
-# print("Predicted Answer:", answer)
-# print("Ground Truth:", example["final_decision"])
-
-# Evaluation loop
-correct = 0
-total = 0
-results = []
-
-empty_responses = 0
-
-for example in tqdm(dataset.select(range(1000))):
-    prompt = build_prompt(example['question'], example['context'])
-    try:
-        response = qa_pipeline(prompt, max_new_tokens=15, do_sample=False, top_p = 0.5 ,return_full_text=False)[0]['generated_text']
-    except Exception as e:
-        print("Error:", e)
-        response = ""
-
-    pred = response.strip().split()[0].lower() if response.strip() else "[empty]"
-    if pred == "[empty]":
-        empty_responses += 1
-
-    label = example["final_decision"].lower()
-
-
-    # Normalize
-    if pred.startswith("yes"):
-        pred = "yes"
-    elif pred.startswith("no"):
-        pred = "no"
-    elif pred.startswith("maybe"):
-        pred = "maybe"
-
-    if pred == label:
-        correct += 1
-
-    total += 1
-    results.append((pred, label))
-
-accuracy = correct / total
-print(f"\nAccuracy on first 1000 examples: {accuracy:.4f}")
+# build a colator
