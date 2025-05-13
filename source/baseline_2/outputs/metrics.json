@@ -1,0 +1,10 @@
+{
+    "Recall@k": 0.523730132266311,
+    "Precision@k": 0.1047460264532622,
+    "Accuracy@k": 0.523730132266311,
+    "Top_k": 5,
+    "Total_Questions": 17994,
+    "True_Positives": 9424,
+    "False_Positives": 80546,
+    "False_Negatives": 8570
+}

@@ -1,0 +1,67 @@
+{
+  "builder_name": "parquet",
+  "citation": "",
+  "config_name": "pqa_artificial",
+  "dataset_name": "pubmed_qa",
+  "dataset_size": 443527466,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/pubmed_qa@9001f2853fb87cab8d220904e0de81ac6973b318/pqa_artificial/train-00000-of-00001.parquet": {
+      "num_bytes": 233411194,
+      "checksum": null
+    }
+  },
+  "download_size": 233411194,
+  "features": {
+    "pubid": {
+      "dtype": "int32",
+      "_type": "Value"
+    },
+    "question": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "context": {
+      "feature": {
+        "contexts": {
+          "dtype": "string",
+          "_type": "Value"
+        },
+        "labels": {
+          "dtype": "string",
+          "_type": "Value"
+        },
+        "meshes": {
+          "dtype": "string",
+          "_type": "Value"
+        }
+      },
+      "_type": "Sequence"
+    },
+    "long_answer": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "final_decision": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 676938660,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 443527466,
+      "num_examples": 211269,
+      "dataset_name": "pubmed_qa"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}
